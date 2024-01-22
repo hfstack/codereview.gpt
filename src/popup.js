@@ -51,6 +51,68 @@ async function getApiKey() {
   }
   return options['openai_apikey'];
 }
+async function callAPI(apiUrl, apiKey, data) {
+  // 设置请求头
+  const headers = new Headers();
+  headers.append('Content-Type', 'application/json');
+  headers.append('Authorization', `Bearer ${apiKey}`);
+
+  // 设置请求参数
+  const options = {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(data)
+  };
+
+  // 发送请求
+  fetch(apiUrl, options)
+      .then(response => response.json())
+      .then(data => console.log(data))
+      .catch((error) => console.error('Error:', error));
+}
+
+
+async function callTongyi(messages, callback, onDone) {
+  let apiKey;
+  try {
+    apiKey = await getApiKey();
+  } catch (e) {
+    callback('Please add your Open AI API key to the settings of this Chrome Extension.');
+    onDone();
+    return;
+  }
+
+  let res
+  let paramsMsg = []
+  for (const message of messages) {
+    paramsMsg.push({
+      "role": "user",
+      "content": message
+    })
+  }
+  try {
+    // Last prompt
+    const options = {
+      "model": "qwen-turbo",
+      "input":{
+          "messages":[      
+              {
+                  "role": "system",
+                  "content": "You are a programming code change reviewer, provide feedback on the code changes given. Do not introduce yourselves."
+              },
+              ...paramsMsg
+          ]
+      },
+    }
+    res = await callAPI('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', 'apiKey', options)
+  } catch (e){
+    callback(String(e));
+    onDone();
+    return;
+  }
+
+  onDone();
+}
 
 async function callChatGPT(messages, callback, onDone) {
   let apiKey;
@@ -193,9 +255,10 @@ async function reviewPR(diffPath, context, title) {
   promptArray.push("All code changes have been provided. Please provide me with your code review based on all the changes, context & title provided");
 
   // Send our prompts to ChatGPT.
-  callChatGPT(
+  callTongyi(
     promptArray,
     (answer) => {
+      console.log(444, answer)
       document.getElementById('result').innerHTML = converter.makeHtml(answer + " \n\n" + warning)
     },
     () => {

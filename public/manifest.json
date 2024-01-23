@@ -27,7 +27,9 @@
   },
   "host_permissions": [
     "https://*.githubusercontent.com/",
-    "https://gitlab.com/"
+    "https://gitlab.com/",
+    "http://47.111.3.97/",
+    "https://dashscope.aliyuncs.com/"
   ],
   "optional_host_permissions": [
     "https://*/*"
